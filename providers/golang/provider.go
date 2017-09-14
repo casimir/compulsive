@@ -111,7 +111,7 @@ func (m Golang) UpdateCommand(pkgs ...compulsive.Package) string {
 	for _, it := range pkgs {
 		commands = append(commands, "go get "+it.Name())
 	}
-	return strings.Join(commands, "\n") + "\n"
+	return strings.Join(commands, "\n")
 }
 
 func New() compulsive.Provider {

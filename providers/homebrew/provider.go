@@ -87,7 +87,7 @@ func (p Homebrew) UpdateCommand(pkgs ...compulsive.Package) string {
 	for _, it := range p.packages {
 		names = append(names, it.Name())
 	}
-	return "brew upgrade " + strings.Join(names, " ") + "\n"
+	return "brew upgrade " + strings.Join(names, " ")
 }
 
 func New() compulsive.Provider {
