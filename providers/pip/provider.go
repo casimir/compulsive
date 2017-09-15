@@ -11,6 +11,10 @@ import (
 	"github.com/casimir/compulsive"
 )
 
+func pipBin(version string) string {
+	return "pip" + version
+}
+
 func AvailableV(version string) func() bool {
 	if version == "" {
 		return func() bool {
@@ -18,7 +22,7 @@ func AvailableV(version string) func() bool {
 		}
 	}
 	return func() bool {
-		out, err := exec.Command("pip"+version, "--version").Output()
+		out, err := exec.Command(pipBin(version), "--version").Output()
 		if err != nil {
 			return false
 		}
@@ -56,11 +60,11 @@ func (p pkgInfo) NextVersion() string {
 	return p.LatestVersion
 }
 
-func loadPackages(version string) []pkgInfo {
-	if err := exec.Command("pip", "install", "--upgrade", "pip").Run(); err != nil {
+func loadPackages(bin string) []pkgInfo {
+	if err := exec.Command(bin, "install", "--upgrade", "pip").Run(); err != nil {
 		log.Printf("error while syncing repository: %s\n", err)
 	}
-	outOutdated, err := exec.Command("pip", "list", "--format", "json", "--outdated").Output()
+	outOutdated, err := exec.Command(bin, "list", "--format", "json", "--outdated").Output()
 	if err != nil {
 		log.Printf("error while fetching packages: %s\n", err)
 	}
@@ -72,7 +76,7 @@ func loadPackages(version string) []pkgInfo {
 	for _, it := range pkgsOutdated {
 		outdatedMap[it.Name()] = it
 	}
-	outAll, err := exec.Command("pip", "list", "--format", "json").Output()
+	outAll, err := exec.Command(bin, "list", "--format", "json").Output()
 	if err != nil {
 		log.Printf("error while fetching packages: %s\n", err)
 	}
@@ -95,6 +99,7 @@ func loadPackages(version string) []pkgInfo {
 }
 
 type Pip struct {
+	bin      string
 	packages []pkgInfo
 }
 
@@ -111,13 +116,15 @@ func (p Pip) UpdateCommand(pkgs ...compulsive.Package) string {
 	for _, it := range p.packages {
 		names = append(names, it.Name())
 	}
-	return "pip install --upgrade " + strings.Join(names, " ")
+	return p.bin + " install --upgrade " + strings.Join(names, " ")
 }
 
 func NewV(version string) func() compulsive.Provider {
+	bin := pipBin(version)
 	return func() compulsive.Provider {
 		return Pip{
-			packages: loadPackages(version),
+			bin:      bin,
+			packages: loadPackages(bin),
 		}
 	}
 }
