@@ -16,6 +16,17 @@ var (
 	aProvider      = flag.String("p", "", "run only the given provider")
 )
 
+func formatPackageLine(pkg compulsive.Package) string {
+	var line []string
+	line = append(line, pkg.Label())
+	if pkg.State() == compulsive.StateOutdated {
+		line = append(line, "("+pkg.Version()+" → "+pkg.NextVersion()+")")
+	} else {
+		line = append(line, "("+pkg.Version()+")")
+	}
+	return strings.Join(line, " ")
+}
+
 func runListProviders() {
 	for _, p := range providers.ListAll(false) {
 		var line []string
@@ -39,20 +50,13 @@ func runProvider(name string) {
 		os.Exit(1)
 	}
 	for _, it := range provider.List() {
-		var line []string
 		state := it.State()
 		if *aAll {
-			line = append(line, string(state))
+			fmt.Printf("%c ", state)
 		} else if state != compulsive.StateOutdated {
 			continue
 		}
-		line = append(line, it.Label())
-		if state == compulsive.StateOutdated {
-			line = append(line, "("+it.Version()+" → "+it.NextVersion()+")")
-		} else {
-			line = append(line, "("+it.Version()+")")
-		}
-		fmt.Println(strings.Join(line, " "))
+		fmt.Println(formatPackageLine(it))
 	}
 }
 
@@ -60,7 +64,6 @@ func runListPackages() {
 	for _, p := range providers.ListAvailable(true) {
 		fmt.Println(p.Name)
 		for _, it := range p.Instance.List() {
-			var line []string
 			state := it.State()
 			sign := ' '
 			if *aAll {
@@ -68,14 +71,7 @@ func runListPackages() {
 			} else if state != compulsive.StateOutdated {
 				continue
 			}
-			line = append(line, string(sign))
-			line = append(line, it.Label())
-			if state == compulsive.StateOutdated {
-				line = append(line, "("+it.Version()+" → "+it.NextVersion()+")")
-			} else {
-				line = append(line, "("+it.Version()+")")
-			}
-			fmt.Println(strings.Join(line, " "))
+			fmt.Printf("%c %s\n", sign, formatPackageLine(it))
 		}
 	}
 }
