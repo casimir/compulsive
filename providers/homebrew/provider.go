@@ -20,9 +20,12 @@ func Available() bool {
 }
 
 type pkgInfo struct {
-	Name_     string `json:"name"`
-	FullName  string `json:"full_name"`
-	Outdated  bool   `json:"outdated"`
+	Name_    string `json:"name"`
+	FullName string `json:"full_name"`
+	Outdated bool   `json:"outdated"`
+	Versions struct {
+		Stable string `json:"stable"`
+	} `json:"versions"`
 	Installed []struct {
 		Version string `json:"version"`
 	} `json:"installed"`
@@ -52,7 +55,7 @@ func (p pkgInfo) Version() string {
 }
 
 func (p pkgInfo) NextVersion() string {
-	return "?"
+	return p.Versions.Stable
 }
 
 func loadPackages() []pkgInfo {
