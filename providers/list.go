@@ -1,6 +1,8 @@
 package providers
 
 import (
+	"sync"
+
 	"github.com/casimir/compulsive"
 	"github.com/casimir/compulsive/providers/golang"
 	"github.com/casimir/compulsive/providers/homebrew"
@@ -39,20 +41,38 @@ func New(name string) (compulsive.Provider, bool) {
 	return nil, false
 }
 
+func insertProvider(list ProviderList, idx int, withInstance bool, entry providerMapEntry) {
+	provider := ProviderEntry{
+		Name:      entry.name,
+		Available: entry.availableFunc(),
+	}
+	if provider.Available && withInstance {
+		provider.Instance = entry.newFunc()
+	}
+	list[idx] = provider
+}
+
 func list(filterFunc func(providerMapEntry) bool, withInstance bool) ProviderList {
-	var providers ProviderList
+	var filteredProviderMap []providerMapEntry
 	for _, it := range providerMap {
 		if filterFunc(it) {
-			entry := ProviderEntry{
-				Name:      it.name,
-				Available: it.availableFunc(),
-			}
-			if entry.Available && withInstance {
-				entry.Instance = it.newFunc()
-			}
-			providers = append(providers, entry)
+			filteredProviderMap = append(filteredProviderMap, it)
 		}
 	}
+	providers := make(ProviderList, len(filteredProviderMap))
+	var wg sync.WaitGroup
+	for i, it := range filteredProviderMap {
+		if withInstance {
+			wg.Add(1)
+			go func(idx int, entry providerMapEntry) {
+				defer wg.Done()
+				insertProvider(providers, idx, withInstance, entry)
+			}(i, it)
+		} else {
+			insertProvider(providers, i, withInstance, it)
+		}
+	}
+	wg.Wait()
 	return providers
 }
 
