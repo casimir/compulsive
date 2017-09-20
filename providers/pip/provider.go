@@ -3,7 +3,6 @@ package pip
 import (
 	"encoding/json"
 	"log"
-	"os"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -11,23 +10,41 @@ import (
 	"github.com/casimir/compulsive"
 )
 
+var (
+	defaultChecked    = false
+	defaultPythonRoot = ""
+)
+
 func pipBin(version string) string {
 	return "pip" + version
 }
 
+var pipRe = regexp.MustCompile(`pip (?P<version>\d+.\d+.\d+) from (?P<root>[/\w-.]+) `)
+
+func checkVersion(version string) (bool, string) {
+	out, err := exec.Command(pipBin(version), "--version").Output()
+	if err != nil {
+		return false, ""
+	}
+	matches := pipRe.FindSubmatch(out)
+	return true, string(matches[2])
+}
+
 func AvailableV(version string) func() bool {
+	if !defaultChecked {
+		defaultChecked, defaultPythonRoot = checkVersion("")
+	}
 	if version == "" {
 		return func() bool {
-			return os.Getenv("VIRTUAL_ENV") != ""
+			return defaultChecked && defaultPythonRoot != ""
 		}
 	}
 	return func() bool {
-		out, err := exec.Command(pipBin(version), "--version").Output()
-		if err != nil {
-			return false
+		available, pythonRoot := checkVersion(version)
+		if defaultChecked {
+			return available && pythonRoot != defaultPythonRoot
 		}
-		matched, err := regexp.Match(`\bpip \d+.\d+.\d+\s`, out)
-		return err == nil && matched
+		return available
 	}
 }
 
