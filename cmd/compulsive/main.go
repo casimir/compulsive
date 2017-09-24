@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/casimir/compulsive"
@@ -11,10 +12,26 @@ import (
 )
 
 var (
-	aAll           = flag.Bool("a", false, "include up-to-date packages/unavailable providers")
-	aListProviders = flag.Bool("l", false, "list providers")
-	aProvider      = flag.String("p", "", "run only the given provider")
+	aAll      = flag.Bool("a", false, "include up-to-date packages/unavailable providers")
+	aProvider = flag.String("p", "", "apply the command for this provider only")
 )
+
+type (
+	options struct {
+		all      bool
+		provider string
+	}
+
+	command struct {
+		help    string
+		runFunc func(options, ...string)
+	}
+)
+
+var commandMap = map[string]command{
+	"packages":  {"list packages", runListPackages},
+	"providers": {"list providers", runListProviders},
+}
 
 func formatPackageLine(pkg compulsive.Package) string {
 	var line []string
@@ -27,10 +44,10 @@ func formatPackageLine(pkg compulsive.Package) string {
 	return strings.Join(line, " ")
 }
 
-func runListProviders() {
+func runListProviders(opts options, _ ...string) {
 	for _, p := range providers.ListAll(false) {
 		var line []string
-		if *aAll {
+		if opts.all {
 			if p.Available {
 				line = append(line, "*")
 			} else {
@@ -44,14 +61,14 @@ func runListProviders() {
 	}
 }
 
-func runProvider(name string) {
-	provider, found := providers.New(name)
+func runProvider(opts options, _ ...string) {
+	provider, found := providers.New(opts.provider)
 	if !found {
 		os.Exit(1)
 	}
 	for _, it := range provider.List() {
 		state := it.State()
-		if *aAll {
+		if opts.all {
 			fmt.Printf("%c ", state)
 		} else if state != compulsive.StateOutdated {
 			continue
@@ -60,13 +77,18 @@ func runProvider(name string) {
 	}
 }
 
-func runListPackages() {
+func runListPackages(opts options, args ...string) {
+	if opts.provider != "" {
+		runProvider(opts)
+		return
+	}
+
 	for _, p := range providers.ListAvailable(true) {
 		fmt.Println(p.Name)
 		for _, it := range p.Instance.List() {
 			state := it.State()
 			sign := ' '
-			if *aAll {
+			if opts.all {
 				sign = rune(state)
 			} else if state != compulsive.StateOutdated {
 				continue
@@ -76,13 +98,40 @@ func runListPackages() {
 	}
 }
 
+func print_usage() {
+	var commands sort.StringSlice
+	for it := range commandMap {
+		commands = append(commands, it)
+	}
+	commands.Sort()
+
+	fmt.Fprintf(os.Stderr, "Usage: %s [flags...] <command> [<parameters>...]\n", os.Args[0])
+	fmt.Fprintln(os.Stderr, "")
+	fmt.Fprintln(os.Stderr, "Flags:")
+	flag.PrintDefaults()
+	fmt.Fprintln(os.Stderr, "")
+	fmt.Fprintln(os.Stderr, "Commands:")
+	for _, it := range commands {
+		fmt.Fprintf(os.Stderr, "  %s\t%s\n", it, commandMap[it].help)
+	}
+}
+
 func main() {
+	flag.Usage = print_usage
 	flag.Parse()
-	if *aListProviders {
-		runListProviders()
-	} else if *aProvider != "" {
-		runProvider(*aProvider)
+
+	commandName := "packages"
+	args := flag.Args()
+	if flag.NArg() > 0 {
+		commandName = args[0]
+		args = args[1:]
+	}
+	command, ok := commandMap[commandName]
+	if ok {
+		opts := options{all: *aAll, provider: *aProvider}
+		command.runFunc(opts, args...)
 	} else {
-		runListPackages()
+		fmt.Fprintf(os.Stderr, "error: unknown command: %s\n", commandName)
+		os.Exit(1)
 	}
 }
