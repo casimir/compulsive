@@ -19,7 +19,7 @@ func pipBin(version string) string {
 	return "pip" + version
 }
 
-var pipRe = regexp.MustCompile(`pip (?P<version>\d+.\d+.\d+) from (?P<root>[/\w-.]+) `)
+var pipRe = regexp.MustCompile(`pip (?P<version>\d+.\d+.\d+) from (?P<root>.+) \((?P<pyversion>.+)\)`)
 
 func checkVersion(version string) (bool, string) {
 	out, err := exec.Command(pipBin(version), "--version").Output()
