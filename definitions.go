@@ -10,6 +10,7 @@ const (
 
 type (
 	Package interface {
+		Provider() Provider
 		Name() string
 		Label() string
 		State() PackageState
@@ -18,7 +19,10 @@ type (
 	}
 
 	Provider interface {
-		List() []Package
+		Name() string
+		IsAvailable() bool
+		Sync() error
+		List() ([]Package, error)
 		UpdateCommand(...Package) string
 	}
 )

@@ -2,7 +2,7 @@ package homebrew
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -10,16 +10,8 @@ import (
 	"github.com/casimir/compulsive"
 )
 
-func Available() bool {
-	out, err := exec.Command("brew", "--version").Output()
-	if err != nil {
-		return false
-	}
-	matched, err := regexp.Match(`\bHomebrew \d+.\d+.\d+-\d+-\w+\b`, out)
-	return err == nil && matched
-}
-
 type pkgInfo struct {
+	provider compulsive.Provider
 	Name_    string `json:"name"`
 	FullName string `json:"full_name"`
 	Outdated bool   `json:"outdated"`
@@ -29,6 +21,10 @@ type pkgInfo struct {
 	Installed []struct {
 		Version string `json:"version"`
 	} `json:"installed"`
+}
+
+func (p pkgInfo) Provider() compulsive.Provider {
+	return p.provider
 }
 
 func (p pkgInfo) Name() string {
@@ -58,43 +54,51 @@ func (p pkgInfo) NextVersion() string {
 	return p.Versions.Stable
 }
 
-func loadPackages() []pkgInfo {
-	if err := exec.Command("brew", "update").Run(); err != nil {
-		log.Printf("error while syncing repository: %s\n", err)
+type Homebrew struct{}
+
+func (p *Homebrew) Name() string {
+	return "homebrew"
+}
+
+func (p *Homebrew) IsAvailable() bool {
+	out, err := exec.Command("brew", "--version").Output()
+	if err != nil {
+		return false
 	}
+	matched, err := regexp.Match(`\bHomebrew \d+.\d+.\d+-\d+-\w+\b`, out)
+	return err == nil && matched
+
+}
+
+func (p *Homebrew) Sync() error {
+	return exec.Command("brew", "update").Run()
+}
+
+func (p *Homebrew) List() ([]compulsive.Package, error) {
 	out, err := exec.Command("brew", "info", "--json=v1", "--installed").Output()
 	if err != nil {
-		log.Printf("error while fetching packages: %s\n", err)
+		return nil, fmt.Errorf("error while fetching packages: %s\n", err)
 	}
-	var pkgs []pkgInfo
-	if err := json.Unmarshal(out, &pkgs); err != nil {
-		log.Printf("failed to decode package info: %s", err)
+	var pkgsInfo []pkgInfo
+	if err := json.Unmarshal(out, &pkgsInfo); err != nil {
+		return nil, fmt.Errorf("failed to decode package info: %s", err)
 	}
-	return pkgs
-}
-
-type Homebrew struct {
-	packages []pkgInfo
-}
-
-func (p Homebrew) List() []compulsive.Package {
 	var pkgs []compulsive.Package
-	for _, it := range p.packages {
-		pkgs = append(pkgs, it)
+	for _, pkg := range pkgsInfo {
+		pkg.provider = p
+		pkgs = append(pkgs, pkg)
 	}
-	return pkgs
+	return pkgs, nil
 }
 
-func (p Homebrew) UpdateCommand(pkgs ...compulsive.Package) string {
+func (p *Homebrew) UpdateCommand(pkgs ...compulsive.Package) string {
 	var names []string
-	for _, it := range p.packages {
+	for _, it := range pkgs {
 		names = append(names, it.Name())
 	}
 	return "brew upgrade " + strings.Join(names, " ")
 }
 
 func New() compulsive.Provider {
-	return Homebrew{
-		packages: loadPackages(),
-	}
+	return &Homebrew{}
 }

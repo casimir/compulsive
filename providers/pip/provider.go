@@ -2,7 +2,7 @@ package pip
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"os/exec"
 	"regexp"
 	"strings"
@@ -15,14 +15,10 @@ var (
 	defaultPythonRoot = ""
 )
 
-func pipBin(version string) string {
-	return "pip" + version
-}
-
 var pipRe = regexp.MustCompile(`pip (?P<version>\d+.\d+.\d+) from (?P<root>.+) \((?P<pyversion>.+)\)`)
 
 func checkVersion(version string) (bool, string) {
-	out, err := exec.Command(pipBin(version), "--version").Output()
+	out, err := exec.Command("pip"+version, "--version").Output()
 	if err != nil {
 		return false, ""
 	}
@@ -30,28 +26,15 @@ func checkVersion(version string) (bool, string) {
 	return true, string(matches[2])
 }
 
-func AvailableV(version string) func() bool {
-	if !defaultChecked {
-		defaultChecked, defaultPythonRoot = checkVersion("")
-	}
-	if version == "" {
-		return func() bool {
-			return defaultChecked && defaultPythonRoot != ""
-		}
-	}
-	return func() bool {
-		available, pythonRoot := checkVersion(version)
-		if defaultChecked {
-			return available && pythonRoot != defaultPythonRoot
-		}
-		return available
-	}
-}
-
 type pkgInfo struct {
+	provider      compulsive.Provider
 	Name_         string `json:"name"`
 	Version_      string `json:"version"`
 	LatestVersion string `json:"latest_version"`
+}
+
+func (p pkgInfo) Provider() compulsive.Provider {
+	return p.provider
 }
 
 func (p pkgInfo) Name() string {
@@ -77,33 +60,60 @@ func (p pkgInfo) NextVersion() string {
 	return p.LatestVersion
 }
 
-func loadPackages(bin string) []pkgInfo {
-	if err := exec.Command(bin, "install", "--upgrade", "pip").Run(); err != nil {
-		log.Printf("error while syncing repository: %s\n", err)
+type Pip struct {
+	version  string
+	bin      string
+	packages []pkgInfo
+}
+
+func (p *Pip) Name() string {
+	return p.bin
+}
+
+func (p *Pip) IsAvailable() bool {
+	if !defaultChecked {
+		defaultChecked, defaultPythonRoot = checkVersion("")
 	}
-	outOutdated, err := exec.Command(bin, "list", "--format", "json", "--outdated").Output()
+	if p.version == "" {
+		return defaultChecked && defaultPythonRoot != ""
+	}
+	available, pythonRoot := checkVersion(p.version)
+	if defaultChecked {
+		return available && pythonRoot != defaultPythonRoot
+	}
+	return available
+
+}
+
+func (p *Pip) Sync() error {
+	return exec.Command(p.bin, "install", "--upgrade", "pip").Run()
+}
+
+func (p *Pip) List() ([]compulsive.Package, error) {
+	outOutdated, err := exec.Command(p.bin, "list", "--format", "json", "--outdated").Output()
 	if err != nil {
-		log.Printf("error while fetching packages: %s\n", err)
+		return nil, fmt.Errorf("error while fetching packages: %s\n", err)
 	}
 	var pkgsOutdated []pkgInfo
 	if err := json.Unmarshal(outOutdated, &pkgsOutdated); err != nil {
-		log.Printf("failed to decode package info: %s", err)
+		return nil, fmt.Errorf("failed to decode package info: %s", err)
 	}
 	outdatedMap := make(map[string]pkgInfo, len(pkgsOutdated))
 	for _, it := range pkgsOutdated {
 		outdatedMap[it.Name()] = it
 	}
-	outAll, err := exec.Command(bin, "list", "--format", "json").Output()
+	outAll, err := exec.Command(p.bin, "list", "--format", "json").Output()
 	if err != nil {
-		log.Printf("error while fetching packages: %s\n", err)
+		return nil, fmt.Errorf("error while fetching packages: %s\n", err)
 	}
 	var pkgsAll []pkgInfo
 	if err := json.Unmarshal(outAll, &pkgsAll); err != nil {
-		log.Printf("failed to decode package info: %s", err)
+		return nil, fmt.Errorf("failed to decode package info: %s", err)
 	}
-	var pkgs []pkgInfo
+	var pkgs []compulsive.Package
 	for _, it := range pkgsAll {
 		pkg := pkgInfo{
+			provider: p,
 			Name_:    it.Name_,
 			Version_: it.Version_,
 		}
@@ -112,23 +122,10 @@ func loadPackages(bin string) []pkgInfo {
 		}
 		pkgs = append(pkgs, pkg)
 	}
-	return pkgs
+	return pkgs, nil
 }
 
-type Pip struct {
-	bin      string
-	packages []pkgInfo
-}
-
-func (p Pip) List() []compulsive.Package {
-	var pkgs []compulsive.Package
-	for _, it := range p.packages {
-		pkgs = append(pkgs, it)
-	}
-	return pkgs
-}
-
-func (p Pip) UpdateCommand(pkgs ...compulsive.Package) string {
+func (p *Pip) UpdateCommand(pkgs ...compulsive.Package) string {
 	var names []string
 	for _, it := range p.packages {
 		names = append(names, it.Name())
@@ -136,12 +133,6 @@ func (p Pip) UpdateCommand(pkgs ...compulsive.Package) string {
 	return p.bin + " install --upgrade " + strings.Join(names, " ")
 }
 
-func NewV(version string) func() compulsive.Provider {
-	bin := pipBin(version)
-	return func() compulsive.Provider {
-		return Pip{
-			bin:      bin,
-			packages: loadPackages(bin),
-		}
-	}
+func New(version string) compulsive.Provider {
+	return &Pip{version: version, bin: "pip" + version}
 }
