@@ -2,6 +2,7 @@ package compulsive
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/template"
 )
@@ -23,7 +24,12 @@ func FmtPkgDesc(pkg Package) string {
 
 func FmtPkgLine(pkg Package) string {
 	var line []string
-	line = append(line, pkg.Label())
+	if pkg.Label() == pkg.Name() {
+		line = append(line, pkg.Label())
+	} else {
+		label := fmt.Sprintf("%s - %s", pkg.Label(), pkg.Name())
+		line = append(line, label)
+	}
 	if pkg.State() == StateOutdated {
 		line = append(line, "("+pkg.Version()+" → "+pkg.NextVersion()+")")
 	} else {
