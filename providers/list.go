@@ -15,12 +15,6 @@ var providers = []compulsive.Provider{
 	pip.New("3"),
 }
 
-type ProviderEntry struct {
-	Name      string
-	Available bool
-	Instance  compulsive.Provider
-}
-
 func Check(name string) error {
 	var provider compulsive.Provider
 	for _, pvd := range providers {
@@ -38,30 +32,23 @@ func Check(name string) error {
 	return nil
 }
 
-func list(filterFunc func(compulsive.Provider) bool) []ProviderEntry {
-	var providerList []ProviderEntry
+func list(filterFunc func(compulsive.Provider) bool) []compulsive.Provider {
+	var providerList []compulsive.Provider
 	for _, pvd := range providers {
 		if filterFunc == nil || filterFunc(pvd) {
-			provider := ProviderEntry{
-				Name:      pvd.Name(),
-				Available: pvd.IsAvailable(),
-			}
-			if provider.Available {
-				provider.Instance = pvd
-			}
-			providerList = append(providerList, provider)
+			providerList = append(providerList, pvd)
 		}
 	}
 	return providerList
 }
 
 // ListAll gives the list of all providers along with their availability.
-func ListAll() []ProviderEntry {
+func ListAll() []compulsive.Provider {
 	return list(nil)
 }
 
 // ListAvailable gives the list of available providers.
-func ListAvailable() []ProviderEntry {
+func ListAvailable() []compulsive.Provider {
 	filter := func(pvd compulsive.Provider) bool {
 		return pvd.IsAvailable()
 	}

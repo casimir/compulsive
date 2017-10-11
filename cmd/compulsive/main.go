@@ -44,15 +44,15 @@ func runListProviders(opts options, _ ...string) error {
 	for _, pvd := range providers.ListAll() {
 		var line []string
 		if opts.all {
-			if pvd.Available {
+			if pvd.IsAvailable() {
 				line = append(line, "*")
 			} else {
 				line = append(line, " ")
 			}
-		} else if !pvd.Available {
+		} else if !pvd.IsAvailable() {
 			continue
 		}
-		line = append(line, pvd.Instance.Name())
+		line = append(line, pvd.Name())
 		fmt.Println(strings.Join(line, " "))
 	}
 	return nil
@@ -108,7 +108,7 @@ func runListPackages(opts options, args ...string) error {
 		return fmt.Errorf("could not build index: %s", err)
 	}
 	for _, pvd := range providers.ListAvailable() {
-		for _, it := range idx.ListProviderPackages(pvd.Instance.Name()) {
+		for _, it := range idx.ListProviderPackages(pvd.Name()) {
 			state := it.State()
 			if opts.all {
 				fmt.Printf("%c %s\n", state, compulsive.FmtPkgLine(it))
