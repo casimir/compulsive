@@ -24,10 +24,10 @@ func Check(name string) error {
 		}
 	}
 	if provider == nil {
-		return compulsive.ProviderNotFoundError
+		return compulsive.ErrProviderNotFound
 	}
 	if !provider.IsAvailable() {
-		return compulsive.ProviderUnavailableError
+		return compulsive.ErrProviderUnavailable
 	}
 	return nil
 }

@@ -7,16 +7,16 @@ import (
 )
 
 var (
-	PackageNameError         = errors.New("not a package name")
-	PackageNotFoundError     = errors.New("package not found")
-	ProviderNotFoundError    = errors.New("provider not found")
-	ProviderUnavailableError = errors.New("provider unavailable")
-	SudoNeededError          = errors.New("sudo needed for this operation")
+	ErrPackageName         = errors.New("not a package name")
+	ErrPackageNotFound     = errors.New("package not found")
+	ErrProviderNotFound    = errors.New("provider not found")
+	ErrProviderUnavailable = errors.New("provider unavailable")
+	ErrSudoNeeded          = errors.New("sudo needed for this operation")
 )
 
 func CheckSudo() error {
 	if os.Getuid() > 0 {
-		return SudoNeededError
+		return ErrSudoNeeded
 	}
 	return nil
 }

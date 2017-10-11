@@ -60,7 +60,7 @@ func runListProviders(opts options, _ ...string) error {
 
 func runInfoPackage(opts options, args ...string) error {
 	if len(args) != 1 || !compulsive.IsPackageName(args[0]) {
-		return compulsive.PackageNameError
+		return compulsive.ErrPackageName
 	}
 	parts := strings.SplitN(args[0], "/", 2)
 	idx, err := index.NewFor([]string{parts[0]}, opts.sync)
@@ -69,11 +69,11 @@ func runInfoPackage(opts options, args ...string) error {
 	}
 	pvd, ok := idx.FindProviderByName(parts[0])
 	if !ok {
-		return compulsive.PackageNotFoundError
+		return compulsive.ErrPackageNotFound
 	}
 	pkg, ok := idx[pvd][parts[1]]
 	if !ok {
-		return compulsive.PackageNotFoundError
+		return compulsive.ErrPackageNotFound
 	}
 	fmt.Print(compulsive.FmtPkgDesc(pkg))
 	return nil
