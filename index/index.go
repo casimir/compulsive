@@ -12,7 +12,7 @@ type Index map[providers.ProviderEntry]map[string]compulsive.Package
 
 func (idx Index) FindProviderByName(name string) (providers.ProviderEntry, bool) {
 	for pvd := range idx {
-		if pvd.Name == name {
+		if pvd.Instance.Name() == name {
 			return pvd, true
 		}
 	}
@@ -36,8 +36,8 @@ func NewFor(names []string, sync bool) (Index, error) {
 	index := make(map[providers.ProviderEntry]map[string]compulsive.Package)
 	sort.Strings(names)
 	for _, pvd := range providers.ListAvailable() {
-		searchIdx := sort.SearchStrings(names, pvd.Name)
-		if searchIdx < len(names) && names[searchIdx] == pvd.Name {
+		searchIdx := sort.SearchStrings(names, pvd.Instance.Name())
+		if searchIdx < len(names) && names[searchIdx] == pvd.Instance.Name() {
 			pvdIndex := make(map[string]compulsive.Package)
 			if sync {
 				if err := pvd.Instance.Sync(); err != nil {
@@ -60,7 +60,7 @@ func NewFor(names []string, sync bool) (Index, error) {
 func New(sync bool) (Index, error) {
 	var names []string
 	for _, pvd := range providers.ListAvailable() {
-		names = append(names, pvd.Name)
+		names = append(names, pvd.Instance.Name())
 	}
 	return NewFor(names, sync)
 }

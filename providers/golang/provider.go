@@ -17,7 +17,6 @@ import (
 )
 
 type pkgInfo struct {
-	provider    compulsive.Provider
 	ImportPath  string
 	Name        string
 	Target      string
@@ -37,7 +36,6 @@ func loadPackages(p *Golang) ([]pkgInfo, error) {
 		if err := dec.Decode(&pkg); err != nil {
 			return nil, fmt.Errorf("failed to decode package info: %s", err)
 		}
-		pkg.provider = p
 		pkgs = append(pkgs, pkg)
 
 	}
@@ -59,17 +57,21 @@ func loadMainPackages(p *Golang) ([]pkgInfo, error) {
 }
 
 type binary struct {
-	command string
-	modTime time.Time
-	info    pkgInfo
+	provider compulsive.Provider
+	command  string
+	modTime  time.Time
+	info     pkgInfo
 }
 
 func (b binary) Provider() compulsive.Provider {
-	return b.info.provider
+	return b.provider
 }
 
 func (b binary) Name() string {
-	return b.info.ImportPath
+	if b.info.ImportPath != "" {
+		return b.info.ImportPath
+	}
+	return b.command
 }
 
 func (b binary) Label() string {
@@ -127,8 +129,9 @@ func (p *Golang) List() ([]compulsive.Package, error) {
 	for _, it := range binaries {
 		filename := it.Name()
 		bin := binary{
-			command: filename,
-			modTime: it.ModTime(),
+			provider: p,
+			command:  filename,
+			modTime:  it.ModTime(),
 		}
 		if runtime.GOOS == "windows" {
 			bin.command = bin.command[:len(bin.command)-4]

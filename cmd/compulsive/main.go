@@ -52,7 +52,7 @@ func runListProviders(opts options, _ ...string) error {
 		} else if !pvd.Available {
 			continue
 		}
-		line = append(line, pvd.Name)
+		line = append(line, pvd.Instance.Name())
 		fmt.Println(strings.Join(line, " "))
 	}
 	return nil
@@ -108,16 +108,13 @@ func runListPackages(opts options, args ...string) error {
 		return fmt.Errorf("could not build index: %s", err)
 	}
 	for _, pvd := range providers.ListAvailable() {
-		fmt.Println(pvd.Name)
-		for _, it := range idx.ListProviderPackages(pvd.Name) {
+		for _, it := range idx.ListProviderPackages(pvd.Instance.Name()) {
 			state := it.State()
-			sign := ' '
 			if opts.all {
-				sign = rune(state)
-			} else if state != compulsive.StateOutdated {
-				continue
+				fmt.Printf("%c %s\n", state, compulsive.FmtPkgLine(it))
+			} else if state == compulsive.StateOutdated {
+				fmt.Println(compulsive.FmtPkgLine(it))
 			}
-			fmt.Printf("%c %s\n", sign, compulsive.FmtPkgLine(it))
 		}
 	}
 	return nil
