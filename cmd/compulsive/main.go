@@ -88,10 +88,9 @@ func runProvider(opts options, _ ...string) error {
 		return fmt.Errorf("could not build index: %s", err)
 	}
 	for _, it := range idx.ListProviderPackages(opts.provider) {
-		state := it.State()
 		if opts.all {
-			fmt.Printf("%c ", state)
-		} else if state != compulsive.StateOutdated {
+			fmt.Printf("%c ", it.State)
+		} else if it.State != compulsive.StateOutdated {
 			continue
 		}
 		fmt.Println(compulsive.FmtPkgLine(it))
@@ -109,10 +108,9 @@ func runListPackages(opts options, args ...string) error {
 	}
 	for _, pvd := range providers.ListAvailable() {
 		for _, it := range idx.ListProviderPackages(pvd.Name()) {
-			state := it.State()
 			if opts.all {
-				fmt.Printf("%c %s\n", state, compulsive.FmtPkgLine(it))
-			} else if state == compulsive.StateOutdated {
+				fmt.Printf("%c %s\n", it.State, compulsive.FmtPkgLine(it))
+			} else if it.State == compulsive.StateOutdated {
 				fmt.Println(compulsive.FmtPkgLine(it))
 			}
 		}

@@ -63,37 +63,11 @@ type binary struct {
 	info     pkgInfo
 }
 
-func (b binary) Provider() compulsive.Provider {
-	return b.provider
-}
-
-func (b binary) Name() string {
+func (b binary) name() string {
 	if b.info.ImportPath != "" {
 		return b.info.ImportPath
 	}
 	return b.command
-}
-
-func (b binary) Label() string {
-	return b.command
-}
-
-func (b binary) State() compulsive.PackageState {
-	if b.info.ImportPath == "" {
-		return compulsive.StateUnknown
-	} else if b.info.Stale {
-		return compulsive.StateOutdated
-	} else {
-		return compulsive.StateUpToDate
-	}
-}
-
-func (b binary) Version() string {
-	return b.modTime.Format("2006-01-02")
-}
-
-func (b binary) NextVersion() string {
-	return time.Now().Format("2006-01-02")
 }
 
 type Golang struct {
@@ -143,7 +117,20 @@ func (p *Golang) List() ([]compulsive.Package, error) {
 				break
 			}
 		}
-		pkgs = append(pkgs, bin)
+		pkg := compulsive.Package{
+			Provider:    p,
+			Name:        bin.name(),
+			Label:       bin.command,
+			State:       compulsive.StateUpToDate,
+			Version:     bin.modTime.Format("2006-01-02"),
+			NextVersion: time.Now().Format("2006-01-02"),
+		}
+		if bin.info.ImportPath == "" {
+			pkg.State = compulsive.StateUnknown
+		} else if bin.info.Stale {
+			pkg.State = compulsive.StateOutdated
+		}
+		pkgs = append(pkgs, pkg)
 	}
 	return pkgs, nil
 }
@@ -151,7 +138,7 @@ func (p *Golang) List() ([]compulsive.Package, error) {
 func (p *Golang) UpdateCommand(pkgs ...compulsive.Package) string {
 	var commands []string
 	for _, it := range pkgs {
-		commands = append(commands, "go get "+it.Name())
+		commands = append(commands, "go get "+it.Name)
 	}
 	return strings.Join(commands, "\n")
 }

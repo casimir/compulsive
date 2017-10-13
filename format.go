@@ -23,15 +23,15 @@ func FmtPkgDesc(pkg Package) string {
 
 func FmtPkgLine(pkg Package) string {
 	var line []string
-	line = append(line, pkg.Provider().Name()+"/"+pkg.Name())
-	if pkg.Label() != pkg.Name() {
+	line = append(line, pkg.Provider.Name()+"/"+pkg.Name)
+	if pkg.Label != pkg.Name {
 		line = append(line, "-")
-		line = append(line, pkg.Label())
+		line = append(line, pkg.Label)
 	}
-	if pkg.State() == StateOutdated {
-		line = append(line, "("+pkg.Version()+" → "+pkg.NextVersion()+")")
+	if pkg.State == StateOutdated {
+		line = append(line, "("+pkg.Version+" → "+pkg.NextVersion+")")
 	} else {
-		line = append(line, "("+pkg.Version()+")")
+		line = append(line, "("+pkg.Version+")")
 	}
 	return strings.Join(line, " ")
 }

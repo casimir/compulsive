@@ -12,7 +12,7 @@ import (
 
 type pkgInfo struct {
 	provider compulsive.Provider
-	Name_    string `json:"name"`
+	Name     string `json:"name"`
 	FullName string `json:"full_name"`
 	Outdated bool   `json:"outdated"`
 	Versions struct {
@@ -21,37 +21,6 @@ type pkgInfo struct {
 	Installed []struct {
 		Version string `json:"version"`
 	} `json:"installed"`
-}
-
-func (p pkgInfo) Provider() compulsive.Provider {
-	return p.provider
-}
-
-func (p pkgInfo) Name() string {
-	return p.FullName
-}
-
-func (p pkgInfo) Label() string {
-	return p.Name_
-}
-
-func (p pkgInfo) State() compulsive.PackageState {
-	if p.Outdated {
-		return compulsive.StateOutdated
-	}
-	return compulsive.StateUpToDate
-}
-
-func (p pkgInfo) Version() string {
-	var versions []string
-	for _, it := range p.Installed {
-		versions = append(versions, it.Version)
-	}
-	return strings.Join(versions, "/")
-}
-
-func (p pkgInfo) NextVersion() string {
-	return p.Versions.Stable
 }
 
 type Homebrew struct{}
@@ -84,8 +53,22 @@ func (p *Homebrew) List() ([]compulsive.Package, error) {
 		return nil, fmt.Errorf("failed to decode package info: %s", err)
 	}
 	var pkgs []compulsive.Package
-	for _, pkg := range pkgsInfo {
-		pkg.provider = p
+	for _, it := range pkgsInfo {
+		var versions []string
+		for _, installed := range it.Installed {
+			versions = append(versions, installed.Version)
+		}
+		pkg := compulsive.Package{
+			Provider:    p,
+			Name:        it.FullName,
+			Label:       it.Name,
+			State:       compulsive.StateUpToDate,
+			Version:     strings.Join(versions, "/"),
+			NextVersion: it.Versions.Stable,
+		}
+		if it.Outdated {
+			pkg.State = compulsive.StateOutdated
+		}
 		pkgs = append(pkgs, pkg)
 	}
 	return pkgs, nil
@@ -94,7 +77,7 @@ func (p *Homebrew) List() ([]compulsive.Package, error) {
 func (p *Homebrew) UpdateCommand(pkgs ...compulsive.Package) string {
 	var names []string
 	for _, it := range pkgs {
-		names = append(names, it.Name())
+		names = append(names, it.Name)
 	}
 	return "brew upgrade " + strings.Join(names, " ")
 }

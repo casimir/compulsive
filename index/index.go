@@ -28,7 +28,7 @@ func (idx Index) ListProviderPackages(providerName string) []compulsive.Package 
 	for _, pkg := range idx[provider] {
 		list = append(list, pkg)
 	}
-	sort.Slice(list, func(i, j int) bool { return list[i].Name() < list[j].Name() })
+	sort.Slice(list, func(i, j int) bool { return list[i].Name < list[j].Name })
 	return list
 }
 
@@ -49,7 +49,7 @@ func NewFor(names []string, sync bool) (Index, error) {
 				return index, err
 			}
 			for _, pkg := range list {
-				pvdIndex[pkg.Name()] = pkg
+				pvdIndex[pkg.Name] = pkg
 			}
 			index[pvd] = pvdIndex
 		}

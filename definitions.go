@@ -9,13 +9,13 @@ const (
 )
 
 type (
-	Package interface {
-		Provider() Provider
-		Name() string
-		Label() string
-		State() PackageState
-		Version() string
-		NextVersion() string
+	Package struct {
+		Provider Provider
+		Name string
+		Label string
+		State PackageState
+		Version string
+		NextVersion string
 	}
 
 	Provider interface {
