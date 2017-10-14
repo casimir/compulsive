@@ -10,7 +10,7 @@ import (
 	"github.com/casimir/compulsive"
 )
 
-type homebrewPkgInfo struct {
+type brewPkgInfo struct {
 	provider compulsive.Provider
 	Name     string `json:"name"`
 	FullName string `json:"full_name"`
@@ -23,13 +23,13 @@ type homebrewPkgInfo struct {
 	} `json:"installed"`
 }
 
-type Homebrew struct{}
+type Brew struct{}
 
-func (p *Homebrew) Name() string {
-	return "homebrew"
+func (p *Brew) Name() string {
+	return "brew"
 }
 
-func (p *Homebrew) IsAvailable() bool {
+func (p *Brew) IsAvailable() bool {
 	out, err := exec.Command("brew", "--version").Output()
 	if err != nil {
 		return false
@@ -39,16 +39,16 @@ func (p *Homebrew) IsAvailable() bool {
 
 }
 
-func (p *Homebrew) Sync() error {
+func (p *Brew) Sync() error {
 	return exec.Command("brew", "update").Run()
 }
 
-func (p *Homebrew) List() ([]compulsive.Package, error) {
+func (p *Brew) List() ([]compulsive.Package, error) {
 	out, err := exec.Command("brew", "info", "--json=v1", "--installed").Output()
 	if err != nil {
 		return nil, fmt.Errorf("error while fetching packages: %s", err)
 	}
-	var pkgsInfo []homebrewPkgInfo
+	var pkgsInfo []brewPkgInfo
 	if err := json.Unmarshal(out, &pkgsInfo); err != nil {
 		return nil, fmt.Errorf("failed to decode package info: %s", err)
 	}
@@ -74,7 +74,7 @@ func (p *Homebrew) List() ([]compulsive.Package, error) {
 	return pkgs, nil
 }
 
-func (p *Homebrew) UpdateCommand(pkgs ...compulsive.Package) string {
+func (p *Brew) UpdateCommand(pkgs ...compulsive.Package) string {
 	var names []string
 	for _, it := range pkgs {
 		names = append(names, it.Name)
@@ -82,6 +82,6 @@ func (p *Homebrew) UpdateCommand(pkgs ...compulsive.Package) string {
 	return "brew upgrade " + strings.Join(names, " ")
 }
 
-func NewHomebrew() compulsive.Provider {
-	return &Homebrew{}
+func NewBrew() compulsive.Provider {
+	return &Brew{}
 }

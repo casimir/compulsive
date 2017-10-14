@@ -6,7 +6,7 @@ import (
 
 var providersInstances = []compulsive.Provider{
 	NewGo(),
-	NewHomebrew(),
+	NewBrew(),
 	NewPip(""),
 	NewPip("2"),
 	NewPip("3"),
