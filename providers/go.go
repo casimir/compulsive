@@ -1,4 +1,4 @@
-package golang
+package providers
 
 import (
 	"bytes"
@@ -27,7 +27,7 @@ type pkgInfo struct {
 func loadPackages(p *Golang) ([]pkgInfo, error) {
 	out, err := exec.Command("go", "list", "-json", "all").Output()
 	if err != nil {
-		return nil, fmt.Errorf("error while fetching packages: %s\n", err)
+		return nil, fmt.Errorf("error while fetching packages: %s", err)
 	}
 	var pkgs []pkgInfo
 	dec := json.NewDecoder(bytes.NewReader(out))
@@ -143,6 +143,6 @@ func (p *Golang) UpdateCommand(pkgs ...compulsive.Package) string {
 	return strings.Join(commands, "\n")
 }
 
-func New() compulsive.Provider {
+func NewGo() compulsive.Provider {
 	return &Golang{path: os.Getenv("GOPATH")}
 }

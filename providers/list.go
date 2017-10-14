@@ -2,22 +2,19 @@ package providers
 
 import (
 	"github.com/casimir/compulsive"
-	"github.com/casimir/compulsive/providers/golang"
-	"github.com/casimir/compulsive/providers/homebrew"
-	"github.com/casimir/compulsive/providers/pip"
 )
 
-var providers = []compulsive.Provider{
-	golang.New(),
-	homebrew.New(),
-	pip.New(""),
-	pip.New("2"),
-	pip.New("3"),
+var providersInstances = []compulsive.Provider{
+	NewGo(),
+	NewHomebrew(),
+	NewPip(""),
+	NewPip("2"),
+	NewPip("3"),
 }
 
 func Check(name string) error {
 	var provider compulsive.Provider
-	for _, pvd := range providers {
+	for _, pvd := range providersInstances {
 		if pvd.Name() == name {
 			provider = pvd
 			break
@@ -34,7 +31,7 @@ func Check(name string) error {
 
 func list(filterFunc func(compulsive.Provider) bool) []compulsive.Provider {
 	var providerList []compulsive.Provider
-	for _, pvd := range providers {
+	for _, pvd := range providersInstances {
 		if filterFunc == nil || filterFunc(pvd) {
 			providerList = append(providerList, pvd)
 		}

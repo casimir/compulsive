@@ -1,4 +1,4 @@
-package pip
+package providers
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ func checkVersion(version string) (bool, string) {
 	return true, string(matches[2])
 }
 
-type pkgInfo struct {
+type pipPkgInfo struct {
 	provider      compulsive.Provider
 	Name          string `json:"name"`
 	Version       string `json:"version"`
@@ -36,7 +36,7 @@ type pkgInfo struct {
 type Pip struct {
 	version  string
 	bin      string
-	packages []pkgInfo
+	packages []pipPkgInfo
 }
 
 func (p *Pip) Name() string {
@@ -65,21 +65,21 @@ func (p *Pip) Sync() error {
 func (p *Pip) List() ([]compulsive.Package, error) {
 	outOutdated, err := exec.Command(p.bin, "list", "--format", "json", "--outdated").Output()
 	if err != nil {
-		return nil, fmt.Errorf("error while fetching packages: %s\n", err)
+		return nil, fmt.Errorf("error while fetching packages: %s", err)
 	}
-	var pkgsOutdated []pkgInfo
+	var pkgsOutdated []pipPkgInfo
 	if err := json.Unmarshal(outOutdated, &pkgsOutdated); err != nil {
 		return nil, fmt.Errorf("failed to decode package info: %s", err)
 	}
-	outdatedMap := make(map[string]pkgInfo, len(pkgsOutdated))
+	outdatedMap := make(map[string]pipPkgInfo, len(pkgsOutdated))
 	for _, it := range pkgsOutdated {
 		outdatedMap[it.Name] = it
 	}
 	outAll, err := exec.Command(p.bin, "list", "--format", "json").Output()
 	if err != nil {
-		return nil, fmt.Errorf("error while fetching packages: %s\n", err)
+		return nil, fmt.Errorf("error while fetching packages: %s", err)
 	}
-	var pkgsAll []pkgInfo
+	var pkgsAll []pipPkgInfo
 	if err := json.Unmarshal(outAll, &pkgsAll); err != nil {
 		return nil, fmt.Errorf("failed to decode package info: %s", err)
 	}
@@ -109,6 +109,6 @@ func (p *Pip) UpdateCommand(pkgs ...compulsive.Package) string {
 	return p.bin + " install --upgrade " + strings.Join(names, " ")
 }
 
-func New(version string) compulsive.Provider {
+func NewPip(version string) compulsive.Provider {
 	return &Pip{version: version, bin: "pip" + version}
 }

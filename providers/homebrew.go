@@ -1,4 +1,4 @@
-package homebrew
+package providers
 
 import (
 	"encoding/json"
@@ -10,7 +10,7 @@ import (
 	"github.com/casimir/compulsive"
 )
 
-type pkgInfo struct {
+type homebrewPkgInfo struct {
 	provider compulsive.Provider
 	Name     string `json:"name"`
 	FullName string `json:"full_name"`
@@ -46,9 +46,9 @@ func (p *Homebrew) Sync() error {
 func (p *Homebrew) List() ([]compulsive.Package, error) {
 	out, err := exec.Command("brew", "info", "--json=v1", "--installed").Output()
 	if err != nil {
-		return nil, fmt.Errorf("error while fetching packages: %s\n", err)
+		return nil, fmt.Errorf("error while fetching packages: %s", err)
 	}
-	var pkgsInfo []pkgInfo
+	var pkgsInfo []homebrewPkgInfo
 	if err := json.Unmarshal(out, &pkgsInfo); err != nil {
 		return nil, fmt.Errorf("failed to decode package info: %s", err)
 	}
@@ -82,6 +82,6 @@ func (p *Homebrew) UpdateCommand(pkgs ...compulsive.Package) string {
 	return "brew upgrade " + strings.Join(names, " ")
 }
 
-func New() compulsive.Provider {
+func NewHomebrew() compulsive.Provider {
 	return &Homebrew{}
 }
