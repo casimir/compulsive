@@ -16,7 +16,7 @@ import (
 	"github.com/casimir/compulsive"
 )
 
-type pkgInfo struct {
+type goPkgInfo struct {
 	ImportPath  string
 	Name        string
 	Target      string
@@ -24,15 +24,15 @@ type pkgInfo struct {
 	StaleReason string
 }
 
-func loadPackages(p *Golang) ([]pkgInfo, error) {
+func loadPackages(p *Go) ([]goPkgInfo, error) {
 	out, err := exec.Command("go", "list", "-json", "all").Output()
 	if err != nil {
 		return nil, fmt.Errorf("error while fetching packages: %s", err)
 	}
-	var pkgs []pkgInfo
+	var pkgs []goPkgInfo
 	dec := json.NewDecoder(bytes.NewReader(out))
 	for dec.More() {
-		var pkg pkgInfo
+		var pkg goPkgInfo
 		if err := dec.Decode(&pkg); err != nil {
 			return nil, fmt.Errorf("failed to decode package info: %s", err)
 		}
@@ -42,12 +42,12 @@ func loadPackages(p *Golang) ([]pkgInfo, error) {
 	return pkgs, nil
 }
 
-func loadMainPackages(p *Golang) ([]pkgInfo, error) {
+func loadMainPackages(p *Go) ([]goPkgInfo, error) {
 	allPkgs, err := loadPackages(p)
 	if err != nil {
 		return nil, err
 	}
-	var pkgs []pkgInfo
+	var pkgs []goPkgInfo
 	for _, it := range allPkgs {
 		if it.Name == "main" {
 			pkgs = append(pkgs, it)
@@ -60,7 +60,7 @@ type binary struct {
 	provider compulsive.Provider
 	command  string
 	modTime  time.Time
-	info     pkgInfo
+	info     goPkgInfo
 }
 
 func (b binary) name() string {
@@ -70,15 +70,15 @@ func (b binary) name() string {
 	return b.command
 }
 
-type Golang struct {
+type Go struct {
 	path string
 }
 
-func (p *Golang) Name() string {
+func (p *Go) Name() string {
 	return "go"
 }
 
-func (p *Golang) IsAvailable() bool {
+func (p *Go) IsAvailable() bool {
 	out, err := exec.Command("go", "version").Output()
 	if err != nil {
 		return false
@@ -88,11 +88,11 @@ func (p *Golang) IsAvailable() bool {
 
 }
 
-func (p *Golang) Sync() error {
+func (p *Go) Sync() error {
 	return nil
 }
 
-func (p *Golang) List() ([]compulsive.Package, error) {
+func (p *Go) List() ([]compulsive.Package, error) {
 	binPath := filepath.Join(p.path, "bin")
 	binaries, _ := ioutil.ReadDir(binPath)
 	pkgsInfo, err := loadMainPackages(p)
@@ -135,7 +135,7 @@ func (p *Golang) List() ([]compulsive.Package, error) {
 	return pkgs, nil
 }
 
-func (p *Golang) UpdateCommand(pkgs ...compulsive.Package) string {
+func (p *Go) UpdateCommand(pkgs ...compulsive.Package) string {
 	var commands []string
 	for _, it := range pkgs {
 		commands = append(commands, "go get "+it.Name)
@@ -144,5 +144,5 @@ func (p *Golang) UpdateCommand(pkgs ...compulsive.Package) string {
 }
 
 func NewGo() compulsive.Provider {
-	return &Golang{path: os.Getenv("GOPATH")}
+	return &Go{path: os.Getenv("GOPATH")}
 }
