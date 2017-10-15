@@ -1,42 +1,49 @@
 package providers
 
 import (
+	"sort"
+
 	"github.com/casimir/compulsive"
 )
 
-var providersInstances = []compulsive.Provider{
-	NewGo(),
-	NewBrew(),
-	NewPip(""),
-	NewPip("2"),
-	NewPip("3"),
+func initInstances() map[string]compulsive.Provider {
+	instances := []compulsive.Provider{
+		NewGo(),
+		NewBrew(),
+		NewCargo(),
+		NewPip(""),
+		NewPip("2"),
+		NewPip("3"),
+	}
+	instanceMap := make(map[string]compulsive.Provider, len(instances))
+	for _, it := range instances {
+		instanceMap[it.Name()] = it
+	}
+	return instanceMap
 }
 
+var Instances = initInstances()
+
 func Check(name string) error {
-	var provider compulsive.Provider
-	for _, pvd := range providersInstances {
-		if pvd.Name() == name {
-			provider = pvd
-			break
-		}
-	}
-	if provider == nil {
+	pvd, ok := Instances[name]
+	if !ok {
 		return compulsive.ErrProviderNotFound
 	}
-	if !provider.IsAvailable() {
+	if !pvd.IsAvailable() {
 		return compulsive.ErrProviderUnavailable
 	}
 	return nil
 }
 
 func list(filterFunc func(compulsive.Provider) bool) []compulsive.Provider {
-	var providerList []compulsive.Provider
-	for _, pvd := range providersInstances {
+	var pvds []compulsive.Provider
+	for _, pvd := range Instances {
 		if filterFunc == nil || filterFunc(pvd) {
-			providerList = append(providerList, pvd)
+			pvds = append(pvds, pvd)
 		}
 	}
-	return providerList
+	sort.Slice(pvds, func(i, j int) bool { return pvds[i].Name() < pvds[j].Name() })
+	return pvds
 }
 
 // ListAll gives the list of all providers along with their availability.
