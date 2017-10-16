@@ -7,13 +7,17 @@ import (
 )
 
 const pkgDescTpl = `Package: {{.Provider.Name}}/{{.Name}}
-Name: {{.Label}}
+Name: {{.Label}}{{if .Summary}}
+Summary: {{.Summary}}{{end}}{{if .Binaries}}
+Binaries: {{StringsJoin .Binaries ", "}}{{end}}
 Version: {{.Version}}{{if .NextVersion}}
 Available: {{.NextVersion}}{{end}}
 `
 
 func FmtPkgDesc(pkg Package) string {
-	t := template.Must(template.New("description").Parse(pkgDescTpl))
+	t := template.New("description")
+	t.Funcs(template.FuncMap{"StringsJoin": strings.Join})
+	t = template.Must(t.Parse(pkgDescTpl))
 	buf := bytes.NewBufferString("")
 	if err := t.Execute(buf, pkg); err != nil {
 		panic(err)

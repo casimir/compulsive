@@ -10,11 +10,13 @@ const (
 
 type (
 	Package struct {
-		Provider Provider
-		Name string
-		Label string
-		State PackageState
-		Version string
+		Provider    Provider
+		Name        string
+		Label       string
+		Summary     string
+		Binaries    []string
+		State       PackageState
+		Version     string
 		NextVersion string
 	}
 

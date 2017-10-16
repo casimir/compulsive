@@ -121,6 +121,7 @@ func (p *Go) List() ([]compulsive.Package, error) {
 			Provider:    p,
 			Name:        bin.name(),
 			Label:       bin.command,
+			Binaries:    []string{bin.command},
 			State:       compulsive.StateUpToDate,
 			Version:     bin.modTime.Format("2006-01-02"),
 			NextVersion: time.Now().Format("2006-01-02"),
