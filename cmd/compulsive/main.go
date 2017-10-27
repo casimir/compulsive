@@ -36,7 +36,7 @@ var (
 
 func init() {
 	flag.BoolVar(&cliOpts.all, "a", false, "include up-to-date packages/unavailable providers")
-	flag.StringVar(&cliOpts.provider, "p", "", "apply the command for this provider only")
+	flag.StringVar(&cliOpts.provider, "p", "", "apply the rommand for this `provider` only")
 	flag.BoolVar(&cliOpts.sync, "s", false, "sync providers before listing packages")
 }
 
