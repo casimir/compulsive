@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	cargoRe      = regexp.MustCompile(`cargo (?P<version>\d+\.\d+\.\d+) \([\w\d]+ \d{4}-\d{2}-\d{2}\)`)
+	cargoRe      = regexp.MustCompile(`^cargo (?P<version>\d+\.\d+\.\d+)`)
 	cargoEntryRe = regexp.MustCompile(`"(?P<name>\S+) (?P<version>\S+) \((?P<uri>\S+)\)" = \[(?P<binaries>[^]]+)\]`)
 )
 
